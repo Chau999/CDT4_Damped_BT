@@ -40,8 +40,6 @@ toy_newpad <- cbind(rep(1, 9),rbind(rep(1, 8), toy_pad))
 rownames(toy_newpad) <- c("Pad",rownames(toy_pad))
 colnames(toy_newpad) <- c( "Pad", colnames(toy_pad))
 
-
-
 pad_btdata <- btdata(toy_newpad, return_graph = TRUE) # so the graph becomes a fully connected graph
 plot.igraph(pad_btdata$graph, vertex.size=30, edge.arrow.size=0.7, edge.width=3 * E(pad_btdata$graph)$weight)
 
@@ -58,6 +56,36 @@ summary(toy_fit_MLE) # Not comparable
 ############################################
 ## Trying with different level of padding ##
 ############################################
+padding_fit <- function(mat, pad_lvl=1, a=1, rm_pad_coef=TRUE){
+  # Initialisation
+  len <- nrow(mat)
+  n_mat <- cbind(rep(pad_lvl, (len + 1)), rbind(rep(pad_lvl, len), mat))
+  rownames(n_mat) <- c("Pad", rownames(mat))
+  colnames(n_mat) <- c("Pad", colnames(mat))
+  
+  # Model Fitting using the MLE method
+  pad_btdata <- btdata(n_mat)
+  pad_fit <- btfit(pad_btdata, a) # Use the MLE method when a == 1, else bayesian
 
+  if (rm_pad_coef) return(coef(pad_fit)[-which(names(coef(pad_fit)) == "Pad")])
+  else return(coef(pad_fit))
+}
 
+padding_fit(toy_pad, pad_lvl = 100) # Pad_lvl does not concern the overall ranking
+
+######################################################
+## Turning the graph into a fully connected network ##
+######################################################
+damping_fit <- function(mat, damp_lvl, a=1){
+  len = nrow(mat)
+  n_mat <- (1 - damp_lvl) * mat + damp_lvl * matrix(1, len, len)
+  
+  pad_btdata <- btdata(n_mat)
+  pad_fit <- btfit(pad_btdata, a) # Use the MLE method when a == 1, else bayesian
+  
+  return(coef(pad_fit))
+}
+
+damping_fit(toy_pad, damp_lvl=0.85) # seems alright
+damping_fit(toy_pad, damp_lvl=1)
 
