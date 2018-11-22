@@ -1,7 +1,7 @@
 ############################
 # Preferential Hunger Game #
 ############################
-
+library("Kendall")
 set.seed(1234)
 
 pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, aggresive_factor=2, depression_factor = 0.5){
@@ -63,7 +63,7 @@ players <- randomNames(num_players, sample.with.replacement = FALSE, which.names
 skills <- exp(rnorm(num_players, 0, 1))
 names(skills) <- players
 
-pref_hgame <- pref_hunger_games(500, players, skills, health_limit = 2)
+pref_hgame <- pref_hunger_games(500, players, skills, health_limit = 10)
 score_mat <- as.data.frame(pref_hgame$score)
 death_order <- pref_hgame$death_ls
 
@@ -88,3 +88,60 @@ barplot(degree(bthunger$graph, mode="out")[death_order], xlab="Order of Death", 
 
 names(sort(skills, decreasing = TRUE))
 
+########################################
+## Analysis on Aggressive hunger game ##
+########################################
+
+padd_coef <- padding_fit(bthunger$wins)
+ranks <- cbind(names(sort(skills, decreasing=TRUE)),names(sort(padd_coef, decreasing = TRUE)))
+colnames(ranks) <- c("True","Padding")
+ranks
+
+
+# Apply padding
+coef_pad <- padding_fit(bthunger$wins, pad_lvl=1)
+coef_pad[names(skills)]
+
+# Apply Damping
+coef_damp <- damping_fit(bthunger$wins, damp_lvl = 0.15, a = 1)
+coef_damp[names(skills)]
+
+# Apply Bayesian model
+Bayes_model <- btfit(bthunger, 2)
+coef_bayes <- Bayes_model$pi$full_dataset
+
+ranks <- cbind(names(sort(skills, decreasing = TRUE)), names(sort(coef_pad, decreasing = TRUE)))
+ranks <- cbind(ranks, names(sort(coef_damp, decreasing = TRUE)))
+ranks <- cbind(ranks, names(sort(coef_bayes, decreasing = TRUE)))
+ranks <- cbind(ranks, sample(players))
+colnames(ranks) <- c("TRUE", "Padding", "Damping", "Bayesian","Control")
+
+ranks
+
+#----------------------------------------------------------------------#
+dummy_vec <- c(1:num_players)
+names(dummy_vec) <- players
+
+ken_vec <- rep(0, 4)
+names(ken_vec) <- c("Padding", "Damping", "Bayesian","Control")
+
+for (j in 2:5){
+  ken_vec[j-1] <- abs(Kendall(dummy_vec[ranks[,1]], dummy_vec[ranks[,j]])$S[[1]])/num_players
+}
+
+?Kendall
+
+ken_vec
+
+dummy_vec[ranks[,1]]
+dummy_vec[ranks[,2]]
+
+kend <- Kendall(dummy_vec[ranks[,1]], dummy_vec[ranks[,2]])
+
+kend$S[[1]]
+
+
+dummy_vec[sample(ranks[, 1])]
+kend_control <- Kendall(dummy_vec[ranks[,1]], dummy_vec[sample(ranks[, 1])])
+
+kend_control$S
