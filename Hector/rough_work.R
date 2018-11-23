@@ -1,15 +1,17 @@
 library(BradleyTerryScalable)
 library(igraph)
 
-# Download data with Bobby's function
-spring2018 <- dataGather(draw = FALSE)
+# Download data with Bobby's function (no draws)
+spring2018nd <- dataGather(draw = FALSE)
+# data with draws
+spring2018wd <- dataGather(draw = TRUE)
 
 # Rearrange torpids data such that its suitable for btdata object
-spring2018 <- cbind(spring2018[c(2,1)],1)
+spring2018nd <- cbind(spring2018nd[c(2,1)],1)
 # Create a btdata object for torpids: matrix containing number of times
 # row i beats column j
-spring2018_mat <- btdata(spring2018, return_graph = TRUE)
-spring2018_mat$wins
+spring2018nd_mat <- btdata(spring2018nd, return_graph = TRUE)
+spring2018nd_mat$wins
 
 # Visualise
 plot.igraph(spring2018_mat$graph, 
@@ -26,7 +28,7 @@ summary(spring2018_mat)
 
 # Write function to visualise data
 visualise <- function(years = 1, from = 2019, torpids = FALSE, draw = FALSE,
-                      vertex_size = 5, edge_arrow_size = 0.3){
+                      vertex_size = 10, edge_arrow_size = 0.3){
   data <- dataGather(years = years, from = from, torpids = torpids, draw = draw)
   data <- cbind(data[c(2,1)],1)
   data_mat <- btdata(data, return_graph = TRUE)
