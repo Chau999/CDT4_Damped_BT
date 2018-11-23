@@ -2,7 +2,7 @@
 # Preferential Hunger Game #
 ############################
 library("Kendall")
-set.seed(1234)
+set.seed(134)
 
 pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, aggresive_factor=2, depression_factor = 0.5){
   # Initialisation
@@ -56,35 +56,57 @@ pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, a
 
 # Testing
 # Generate players
-num_players <- 50
-players <- randomNames(num_players, sample.with.replacement = FALSE, which.names = "first",name.sep=" ")
+num_players <- 13
+#players <- randomNames(num_players, sample.with.replacement = FALSE, which.names = "first",name.sep=" ")
+players <- c("Alan","Maud","Natalia","Valarie","James","Bobby","Deborah","Lorenzo","Lucy","Emanualle","Ana","William","Hector")
 
 # Generate skills
 skills <- exp(rnorm(num_players, 0, 1))
 names(skills) <- players
+hist(skills)
 
-pref_hgame <- pref_hunger_games(500, players, skills, health_limit = 10)
+pref_hgame <- pref_hunger_games(500, players, skills, health_limit = 1,aggresive_factor = 1,depression_factor = 1)
 score_mat <- as.data.frame(pref_hgame$score)
 death_order <- pref_hgame$death_ls
 
 hunger_4col <- codes_to_counts(score_mat, c("W1", "W2"))
 bthunger <- btdata(hunger_4col, return_graph = TRUE)
 
-degree(bthunger$graph, mode="out")
+# The design of the network display
+dev.off()
+colfunc <- colorRampPalette(c("Red","orange"))
+V(bthunger$graph)$color <- "pink"
+V(bthunger$graph)[names(sort(degree(bthunger$graph, mode="out"), decreasing = TRUE))[1:3]]$color <- colfunc(3)
 
-V(bthunger$graph)["Alejandro"]$color <- "red"
+#V(bthunger$graph)[names(sort(degree(bthunger$graph, mode="out"), decreasing = TRUE))]$color <- colfunc(num_players)
 
+edge.start <- ends(bthunger$graph, es=E(bthunger$graph), names=F)[,1]
+edge.col <- V(bthunger$graph)$color[edge.start]
+E(bthunger$graph)$width <- 0.1 + E(bthunger$graph)$weight
+par(mar=c(0,0,0,0) + 0.1)
 plot.igraph(bthunger$graph, 
-            vertex.size=15, 
-            edge.arrow.size=0.1, 
-            #edge.width=3 * E(bthunger$graph)$weight, 
-            shape="circle", 
+            vertex.size=20, 
+            edge.arrow.size=0.2, 
+            edge.width=3 * E(bthunger$graph)$weight, 
+            shape="circle",
+            edge.color=edge.col,
             curved=TRUE
             #layout = layout_in_circle(bthunger$graph, order = hunger_death)
 )
+title("Hunger Games Illustration")
 
+# tkplot(bthunger$graph)
+
+
+# Barplot to display the number of deaths
 dev.off()
-barplot(degree(bthunger$graph, mode="out")[death_order], xlab="Order of Death", ylab="Number of Deaths")
+end_point = 0.5 + length(death_order) + length(death_order)-1
+par(mar = c(5, 4, 2, 2) + 0.2)
+barplot(degree(bthunger$graph, mode="out")[death_order], xlab="Order to Death",ylab="Number of Deaths", space=1, xaxt="n", mgp=c(3,1,0))
+text(seq(1.5,end_point,by=2), par("usr")[3]-0.25, 
+     srt = 60, adj= 1, xpd = TRUE,
+     labels = paste(death_order), cex=1)
+
 
 names(sort(skills, decreasing = TRUE))
 

@@ -9,8 +9,9 @@ library(BradleyTerryScalable)
 set.seed(1234)
 
 # Generate players
-num_players <- 60
-players <- randomNames(num_players, sample.with.replacement = FALSE, which.names = "first",name.sep=" ")
+num_players <- 13
+#players <- randomNames(num_players, sample.with.replacement = FALSE, which.names = "first",name.sep=" ")
+players <- c("Alan","Maud","Natalia","Valarie","James","Bobby","Deborah","Lorenzo","Lucy","Emanualle","Ana","William","Hector")
 
 # Generate skills
 skills <- exp(rnorm(num_players, 0, 1))
@@ -59,7 +60,7 @@ hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit){
 }
 
 # generate hunger frame
-hunger_list <- hunger_games(500, players, skills, 3)
+hunger_list <- hunger_games(500, players, skills, 1)
 hunger_death <- hunger_list$death_ls
 hunger_sim <- as.data.frame(hunger_list$score)
 
@@ -69,11 +70,13 @@ bthunger <- btdata(hunger_4col, return_graph = TRUE)
 
 # Visualise
 plot.igraph(bthunger$graph, 
-            vertex.size=15, 
-            edge.arrow.size=0.1, 
+            vertex.size=28, 
+            edge.arrow.size=0.5, 
             #edge.width=3 * E(bthunger$graph)$weight, 
             shape="circle", 
-            curved=TRUE
+            curved=TRUE,
+            edge.color = "blue",
+            vertex.color = "lightblue"
             #layout = layout_in_circle(bthunger$graph, order = hunger_death)
             )
 
