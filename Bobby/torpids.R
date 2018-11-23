@@ -1,6 +1,6 @@
 # get data from online http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/
-
-dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
+# don't count bumps from lower divisions using cutoff, 65 corresponds to top 5 divisions
+dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE, cutoff=65){
   df <- data.frame(Boat_1=character(),
                    Boat_2=character(), 
                    outcome=character(), 
@@ -29,7 +29,7 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
           
           # a particularly bad anomaly
           if (from-year==2011 && line[1]=="St Antony's II"){
-            line<- c(line[seq_len(length(line)-1)],'-1','-12')
+            line<- c(line[seq_len(length(line)-1)],'-1','-1')
           }
           boatName <-line[1]
           
@@ -86,8 +86,11 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
           newBoatVec[position+ii] <- loseBoat
 
           newBoatVec[position] <- winBoat
-
-          df[nrow(df)+1,] <- c(loseBoat, winBoat, 'W2')
+          # add ii rows to the df in order to give overbumps more weighting
+          if (position < cutoff){
+            df[seq(nrow(df)+1,nrow(df)+ii),] <- matrix(rep(c(loseBoat, winBoat, 'W2'),each=ii, nrow=ii))
+          }  
+          
           
           bumpBoatsdf <- bumpBoatsdf[-c(bumpIndex, bumpIndex+1),]
         }
@@ -118,7 +121,11 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
           # find the bumper, this will be by definition the next boat in bumpBoatsdf that has >0 change
           bumperIndex <- which(bumpBoatsdf[seq(index+1,nrow(bumpBoatsdf)),dayString]>0)[1]
           bumper <- rownames(bumpBoatsdf)[bumperIndex + index]
-          df[nrow(df)+1,] <- c(boat, bumper,'W2')
+          position <- which(rownames(yeardf)==boat)
+          if (position < cutoff){
+            df[seq(nrow(df)+1,nrow(df)-change),] <- matrix(rep(c(boat, bumper,'W2'), each=-change), nrow= -change)
+          }
+          
         }
       }
       
@@ -136,17 +143,13 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
       drawIndices <- which(boringPlaces - c(boringPlaces[seq(2,length(boringPlaces))] ,-1) ==-1)
       
       for (drawIndex in drawIndices){
-        boat1 <- 
-        df[nrow(df)+1,] <- c()))
-      }
+        boat1 <- rownames(yeardf)[boringPlaces[drawIndex]]
+        boat2 <- rownames(yeardf)[boringPlaces[drawIndex+1]]
+        position <- which(rownames(yeardf)==boat1)
+        if (position < cutoff){
+          df[nrow(df)+1,] <- c(boat1,boat2, 'D')
+        }
       
-      
-      for (boat in boringBoats[-1]) {
-        index <- which(boringBoats==boat)
-        # only count draws if they were actually chasing the boat in front
-        
-        
-        df[nrow(df)+1,] <- c(boat, boringBoats[index-1],'D')
       }
     }
     #rearrange in the new order
