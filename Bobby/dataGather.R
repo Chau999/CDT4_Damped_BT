@@ -152,12 +152,12 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE, cutoff=65){
       
       }
     }
+    
     #rearrange in the new order
     yeardf <- yeardf[newBoatVec,]
   }
-  
+ 
   }
-
   
   return(df)
 }
