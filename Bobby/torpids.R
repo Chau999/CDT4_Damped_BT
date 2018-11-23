@@ -131,8 +131,21 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
     
     # add draws to the dataframe if parameter selected
     if (draw==TRUE){
+      boringPlaces=which(rownames(yeardf) %in% boringBoats)
+      
+      drawIndices <- which(boringPlaces - c(boringPlaces[seq(2,length(boringPlaces))] ,-1) ==-1)
+      
+      for (drawIndex in drawIndices){
+        boat1 <- 
+        df[nrow(df)+1,] <- c()))
+      }
+      
+      
       for (boat in boringBoats[-1]) {
         index <- which(boringBoats==boat)
+        # only count draws if they were actually chasing the boat in front
+        
+        
         df[nrow(df)+1,] <- c(boat, boringBoats[index-1],'D')
       }
     }
