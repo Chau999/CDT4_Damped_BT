@@ -7,7 +7,7 @@ citations
 
 # Load the toy_data
 data(toy_data)
-toy_data
+?toy_data
 
 # Format the data into correct format
 citations_btdata <- btdata(citations, return_graph = TRUE)
