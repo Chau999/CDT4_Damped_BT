@@ -1,30 +1,23 @@
-# get data from online
+# get data from online http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/
 
-dataGather <- function(years=1,torpids=TRUE){
+dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE){
   df <- data.frame(Boat_1=character(),
                    Boat_2=character(), 
                    outcome=character(), 
                    stringsAsFactors=FALSE) 
   
-  tmpdf <- data.frame(Boat=character(),
-                       Day_1=numeric(), 
-                       Day_2=numeric(),
-                       Day_3=numeric(), 
-                       Day_4=numeric(), 
-                       stringsAsFactors=FALSE)  
   for (year in seq_len(years)){
-
-    yeardf <- data.frame(Boat=character(),
-                     Day_1=numeric(), 
+    # organise the data from each year before adding to df
+    yeardf <- data.frame(Day_1=numeric(), 
                      Day_2=numeric(),
                      Day_3=numeric(), 
                      Day_4=numeric(), 
                      stringsAsFactors=FALSE)            
-    print(paste0('Currently downloading data from the year: ', 2019-year))
+    print(paste0('Currently downloading data from the year: ', from-year))
     # make sure the year being tried actually has data
-    if (class(try(readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', 2019-year,'/e', 2019-year,'m.txt'))
+    if (class(try(readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', from-year,'/e', from-year,'m.txt'))
                   ))!='try-error'){
-      eightsFile <-readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', 2019-year,'/e', 2019-year,'m.txt'))
+      eightsFile <-readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', from-year,'/e', from-year,'m.txt'))
       # remove the first line
       for (ii in seq(2, length(eightsFile))){
         line <- eightsFile[ii]
@@ -34,14 +27,18 @@ dataGather <- function(years=1,torpids=TRUE){
           
           line <- line[which(line != '')]
           
-          if (year==8 && line[1]=="St Antony's II"){
+          # a particularly bad anomaly
+          if (from-year==2011 && line[1]=="St Antony's II"){
             line<- c(line[seq_len(length(line)-1)],'-1','-12')
           }
-         
+          boatName <-line[1]
           
-          yeardf[nrow(df)+1,] <- line
+          results <- tail(line,4)
           
-        }
+          yeardf[nrow(yeardf)+1,] <- results
+          
+         rownames(yeardf)[nrow(yeardf)] <- boatName
+          }
       }
     }
 
@@ -53,48 +50,98 @@ dataGather <- function(years=1,torpids=TRUE){
   
   yeardf$Day_4 <- as.numeric(yeardf$Day_4) 
   
-  tmpdf <- rbind.data.frame(tmpdf,yeardf)
+  boatVec <- rownames(yeardf)
   
-  boatVec <- yeardf$Boats
   # need to iterate through the boats on different days to update who's competing
   for (day in 1:4){
     dayString <- paste0('Day_',day)
     newBoatVec <- c()
     
-    # vector of boats who have changed position from the day's racing
-    bumpBoats <- df$Boats[df[dayString] != 0]
+    bumpBoatsdf <- yeardf[yeardf[dayString]!=0,]
     
-    boringBoats <- df$Boats[df[dayString] == 0]
+    boringBoatsdf <- yeardf[yeardf[dayString] ==0,]
+
+    boringBoats <- rownames(boringBoatsdf)
     
-    #while (length(bumpBoats)>0){
-      #loseBoat <- bumpBoats[1]
-      #bumperB
-    #}
+    # sort out the bumps first
+    while(nrow(bumpBoatsdf)>0){
+      
+      # for changing ii, remove the vanilla bumps (or overbumps for ii>1) that occur in the same division
+      for (ii in 1:10){
+        # check if a normal bump remains in bumpBoatsdf
+        while(grepl(paste(c(-ii,ii),collapse=";"),paste(bumpBoatsdf[,dayString],collapse=";"))){
+          
+          # vector of boats who have changed position from the day's racing
+          bumpBoats <- rownames(bumpBoatsdf)
+          
+          # find the first time we have -ii followed by ii in the race
+          bumpIndex <- which((bumpBoatsdf[,dayString]== -ii)& (c(bumpBoatsdf[seq(2,nrow(bumpBoatsdf)),dayString],0)==ii))[1]
+          
+          loseBoat <- bumpBoats[bumpIndex]
+          
+          winBoat <- bumpBoats[bumpIndex+1]
+          
+          position <- which(rownames(yeardf)==loseBoat)
+          
+          newBoatVec[position+ii] <- loseBoat
+
+          newBoatVec[position] <- winBoat
+
+          df[nrow(df)+1,] <- c(loseBoat, winBoat, 'W2')
+          
+          bumpBoatsdf <- bumpBoatsdf[-c(bumpIndex, bumpIndex+1),]
+        }
+      }
+      # now to deal with the dodgy cases
+      if (day==1 & from-year==2018 & torpids == FALSE){
+        mert <- 'Merton II'
+        hild <- "St Hilda's"
+        hert <- 'Hertford II'
+        linc <- 'Lincoln II'
+        df[nrow(df)+1,] <- c(mert,hild,'W2')
+        df[nrow(df)+1,] <- c(hert, linc, 'W2')
+        position <- which(rownames(yeardf)==mert)
+        newBoatVec[position] <- hild
+        newBoatVec[position + 1] <- linc
+        newBoatVec[position + 2] <- mert
+        newBoatVec[position + 3] <- hert
+        bumpBoatsdf <- bumpBoatsdf[!rownames(bumpBoatsdf) %in% c(hild,linc,mert,hert),]
+      }
+      # hopefully, bumpBoatsdf contains only the mess that is cross divisional bumps now
+      for (boat in rownames(bumpBoatsdf)){
+        change <- bumpBoatsdf[boat,dayString]
+        position <- which(rownames(yeardf)==boat)
+        newBoatVec[position-change] <- boat
+        # count all encounters from the loser's perspective
+        if (change<0){
+          index <-  which(rownames(bumpBoatsdf)==boat)
+          # find the bumper, this will be by definition the next boat in bumpBoatsdf that has >0 change
+          bumperIndex <- which(bumpBoatsdf[seq(index+1,nrow(bumpBoatsdf)),dayString]>0)[1]
+          bumper <- rownames(bumpBoatsdf)[bumperIndex + index]
+          df[nrow(df)+1,] <- c(boat, bumper,'W2')
+        }
+      }
+      
+      bumpBoatsdf <- data.frame()
+      
+    }
     
-      #for (jj in nrow(df)){
-       # boat <- df$Boat[jj]
-        #rankChange <- as.numeric(df[dayString][jj,1])
-        ## update Boat listings for the next day
-        #newBoatVec[jj-rankChange] <- boat
-        #result <- c(boat, df$Boat) 
-        
+    # update the positions that haven't changed
+    newBoatVec[which(rownames(yeardf) %in% boringBoats)] <- boringBoats
+    
+    # add draws to the dataframe if parameter selected
+    if (draw==TRUE){
+      for (boat in boringBoats[-1]) {
+        index <- which(boringBoats==boat)
+        df[nrow(df)+1,] <- c(boat, boringBoats[index-1],'D')
       }
     }
+    #rearrange in the new order
+    yeardf <- yeardf[newBoatVec,]
   }
+  
   }
 
   
-  return(yeardf)
+  return(df)
 }
-
-n=2018-1835
-df=data.frame()
-for (year in seq_len(n)){
-  eightsFile = readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', 2019-year,'/e', 2019-year,'m.txt'))
-  for (line in eightsFile){
-    splitLine <- unlist(strsplit(line, "  "))
-    if (all(sapply(splitLine),grep, '-10'))
-  }
-year=1
-eightsFile = scan(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', 2019-year,'/e', 2019-year,'m.txt'),what='character')
-  
