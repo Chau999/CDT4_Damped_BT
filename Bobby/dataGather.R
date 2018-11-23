@@ -123,7 +123,7 @@ dataGather <- function(years=1,from=2019,torpids=FALSE,draw=TRUE, cutoff=65){
           bumper <- rownames(bumpBoatsdf)[bumperIndex + index]
           position <- which(rownames(yeardf)==boat)
           if (position < cutoff){
-            df[seq(nrow(df)+1,nrow(df)-change),] <- matrix(rep(c(boat, bumper,'W2'), each=-change), nrow= -change)
+            df[seq(nrow(df)+1,nrow(df)-change),] <- matrix(rep(c(bumper,boat,'W1'), each=-change), nrow= -change)
           }
           
         }
