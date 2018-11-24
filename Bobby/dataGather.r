@@ -1,3 +1,4 @@
+# modularise the data gather function, make yeardf a separate function
 yeardf <- function(year=2018){
   yeardf <- data.frame(Day_1=numeric(), 
                        Day_2=numeric(),

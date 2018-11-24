@@ -26,18 +26,16 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   
   avg_wins <- sum(row_pad)/nrow(row_pad)
   
-  prior_year <- from - years -1
+  prior_year <- from - years
   
   prior_year_df <- yeardf(prior_year)
   
   prior_year_df$ranking <- seq_len(nrow(prior_year_df))
   
-  rankingPerm <- prior_year_df[sort(rownames(prior_year_df)),'ranking']
-  
   currentBoats <- rownames(row_pad)
   
   priorRanks <- prior_year_df[rownames(row_pad),'ranking']
-  sortRanks <- sort(priorRanks, index.return= TRUE)
+  sortRanks <- sort(priorRanks, index.return= TRUE,na.last=TRUE)
   
   index <- sortRanks$ix
   
@@ -51,28 +49,20 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   
   ghostRow[which(is.na(priorRanks))] <- 1/2
   
-  ghostCol[index[(!is.na(index))]] <- seq(1,0,length.out=length(which(!is.na(priorRanks))))[!is.na(priorRanks)]
+  ghostCol[index[(!is.na(index))]] <- seq(1,0,length.out=length(which(!is.na(priorRanks))))
   
   ghostCol[which(is.na(priorRanks))] <- 1/2
   
   ghostCol<- c(0,ghostCol)
   
   pad <- avg_wins * 2 * (1/delta - 1)
-  print(pad)
+  
   row_pad <- cbind(ghostCol*pad, rbind(ghostRow*pad, row_pad))
   
   rownames(row_pad)[1]='ghostShip'
   colnames(row_pad)[1]='ghostShip'
   return(row_pad)
 }
-
-mat <- pad_row()
-
-pad_btdata <- btdata(mat)
-pad_fit <- btfit(pad_btdata, a=1) # Use the MLE method when a == 1, else bayesian
-coef(pad_fit)
-row_df <- padDataGather(years,from=from, cutoff=50,draw = draw)
-
 
 # how about scrooge
 scrooge <- function(m){
