@@ -1,15 +1,14 @@
 # modularise the data gather function, make yeardf a separate function
-yeardf <- function(year=2018){
+yeardf <- function(year=2018, sex=gender, torp=torpids){
+  race <- ifelse(torp,'t','e')
   yeardf <- data.frame(Day_1=numeric(), 
                        Day_2=numeric(),
                        Day_3=numeric(), 
                        Day_4=numeric(), 
                        stringsAsFactors=FALSE)            
   
-  # make sure the year being tried actually has data
-  if (class(try(readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', year,'/e', year,'m.txt'))
-  ))!='try-error'){
-    eightsFile <-readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/e', year,'/e', year,'m.txt'))
+
+    eightsFile <-readLines(paste0('http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/', race, year,'/',race, year, sex, '.txt'))
     # remove the first line
     for (ii in seq(2, length(eightsFile))){
       line <- eightsFile[ii]
@@ -32,7 +31,7 @@ yeardf <- function(year=2018){
         rownames(yeardf)[nrow(yeardf)] <- boatName
       }
     }
-  }
+
   
   yeardf$Day_1 <- as.numeric(yeardf$Day_1) 
   
@@ -48,7 +47,7 @@ yeardf <- function(year=2018){
 
 # get data from online http://eodg.atm.ox.ac.uk/user/dudhia/rowing/bumps/ and include padding to reflect ranking beliefs
 # don't count bumps from lower divisions using cutoff, 65 corresponds to top 5 divisions
-dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff = 65){
+dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff = 65, gender='m'){
   df <- data.frame(Boat_1=character(),
                    Boat_2=character(), 
                    outcome=character(), 
@@ -58,8 +57,8 @@ dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff
     # organise the data from each year before adding to df
     #print(paste0('Currently downloading data from the year: ', year))
     year <- from - yearCount
-    yeardf <- yeardf(year)
     
+    yeardf <- yeardf(year, sex=gender,torp=FALSE)
     
     boatVec <- rownames(yeardf)
     
@@ -107,7 +106,7 @@ dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff
           }
         }
         # now to deal with the dodgy cases
-        if (day==1 & from-year==2018 & torpids == FALSE){
+        if (day==1 & from-year==2018 & torpids == FALSE & gender == 'm'){
           mert <- 'Merton II'
           hild <- "St Hilda's"
           hert <- 'Hertford II'
@@ -169,6 +168,7 @@ dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff
     }
     
   }
-  
+ 
   return(df)
 }
+

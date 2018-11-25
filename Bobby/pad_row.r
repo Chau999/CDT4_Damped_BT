@@ -1,11 +1,15 @@
-#download the package
+# download the package
 install.packages('BradleyTerryScalable')
+install.packages('Matrix.utils')
+install.packages('stringr')
 library(BradleyTerryScalable)
 library(igraph)
 
 
-pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot=FALSE, delta = 0.85){
-  row_df <- dataGather(years,from=from,cutoff=cutoff,draw=draw,torpids=torpids)
+pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot=FALSE, delta = 0.85, gender){
+  
+  # get results dataframe first from given time period (from-years to from -1)
+  row_df <- dataGather(years,from=from,cutoff=cutoff,draw=draw,torpids=torpids, gender=gender)
   if (draw==TRUE){
     codes <- c('W1','W2','D')
   } else{
@@ -16,6 +20,7 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   
   row_btdata <- btdata(row_df_4col,return_graph=plot)
   
+  # option to plot the graph 
   if (plot){
     par(mar=c(0,0,0,0) + 0.1)
     
@@ -26,31 +31,24 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   
   avg_wins <- sum(row_pad)/nrow(row_pad)
   
+  # use rankings from prior_year
   prior_year <- from - years
-  
-  prior_year_df <- yeardf(prior_year)
-  
+  prior_year_df <- yeardf(prior_year,sex=gender,torp=torpids)
   prior_year_df$ranking <- seq_len(nrow(prior_year_df))
-  
   currentBoats <- rownames(row_pad)
-  
-  priorRanks <- prior_year_df[rownames(row_pad),'ranking']
+  priorRanks <- prior_year_df[currentBoats,'ranking']
   sortRanks <- sort(priorRanks, index.return= TRUE,na.last=TRUE)
-  
   index <- sortRanks$ix
   
+  
   ghostCol <- c()
-  
   ghostRow <- c()
-  
   ghostRow[index[!is.na(index)]] <- seq(0,1,length.out=length(which(!is.na(priorRanks))))
   
-  #ghostRow[which(!is.na(priorRanks))] <- seq(1,0,length.out=length(which(!is.na(priorRanks))))[!is.na(priorRanks)]
-  
+  # set unseen boats to have average ability
   ghostRow[which(is.na(priorRanks))] <- 1/2
   
   ghostCol[index[(!is.na(index))]] <- seq(1,0,length.out=length(which(!is.na(priorRanks))))
-  
   ghostCol[which(is.na(priorRanks))] <- 1/2
   
   ghostCol<- c(0,ghostCol)
