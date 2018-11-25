@@ -52,7 +52,7 @@ teleporter <- function(df,delta,year,gender,torpids){
 }
 
 
-method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, plot=TRUE, delta = 0.85,gender='m'){
+method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logplot=TRUE, delta = 0.85,gender='m'){
   pad_prob_vec <- c()
   no_pad_prob_vec <- c()
   tele_prob_vec<-c()
@@ -80,7 +80,6 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, plot
     pad_pi <- exp(coef(pad_fit))
     no_pad_pi <- exp(coef(no_pad_fit))
     coeffs<- coef(tele_fit)
-    
     # for some reason coeffs is sometimes a list
     if (is.list(coef(tele_fit))){
       coeffs <- coef(tele_fit)[[1]]
@@ -110,23 +109,23 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, plot
                                                                                             current_df[x,'outcome'],
                                                                                             theta))))
     pad_prob_vec <- c(pad_prob_vec, log_prob_pad)
-    
     no_pad_prob_vec <- c(no_pad_prob_vec,log_prob_no_pad)
     tele_prob_vec <- c(tele_prob_vec , log_prob_tele)
+    
     log_mat <- matrix(c(pad_prob_vec,no_pad_prob_vec,tele_prob_vec),ncol=3)
   }
-  if (plot==TRUE){
-    name <- paste0(gender,'comparison.pdf')
+  if (logplot==TRUE){
+    name <- paste0(gender,delta*100,'comparison.pdf')
     pdf(name,width=8,height=5,paper='special') 
     plot(seq(start,start+years), log_mat[,1],'b', col='red',ylim=c(min(log_mat),max(log_mat)),xlab='year',ylab='Log-likelihood',xaxt='n')
     axis(1, at=seq(2008,2018,by=1), las=2)
     lines(seq(start,start+years),log_mat[,2],'b',col='blue')
     lines(seq(start,start+years),log_mat[,3],'b',col='green')
-    legend('bottomright',c('MAP','Padding','Teleport'),col=c('red','blue','green'),lty=1)
+    legend('bottomright',c('Padding','MAP','Teleport'),col=c('red','blue','green'),lty=1)
     dev.off()
-  
   }
-  return(matrix(c(pad_prob_vec,no_pad_prob_vec),ncol=2))
+  
+  return(log_mat)
 }
 
 
