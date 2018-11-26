@@ -4,22 +4,22 @@
 library("Kendall")
 set.seed(134)
 
-pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, aggresive_factor=2, depression_factor = 0.5){
+pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, aggresive_factor=2, depression_factor = 0.5, health_vec = rep(1, num_players)){
   # Initialisation
   num_players <- length(player_vec)
   death_list <- c()
   fight_vec <- rep(1, num_players)
   names(fight_vec) <- player_vec
   current_players <- rep(player_vec)
-  health_vec <- rep(health_limit, num_players)
-  names(health_vec) <- player_vec
   score_mat <- matrix(0, nrow=num_rounds, ncol=3)
   colnames(score_mat) <- c("Player1", "Player2", "Outcome")
   # Run the for loop
   for (i in 1:num_rounds){
     # Sample two player
     if (length(current_players) == 1){
-      return(list(score = score_mat[1:(i-1),], death_ls = c(death_list, current_players)))
+      return(list(score = score_mat[1:(i-1),], 
+                  death_ls = c(death_list, current_players),
+                  survived = current_players))
     }
     else{
       curr_P <- sample(player_vec, size = 2, replace = FALSE, prob = fight_vec)
@@ -51,7 +51,7 @@ pref_hunger_games <- function(num_rounds, player_vec, skill_vec, health_limit, a
       }
     }
   }
-  return(list(score = score_mat, death_ls = c(death_list, current_players)))
+  return(list(score = score_mat, death_ls = c(death_list, current_players), survied = current_players))
 }
 
 # Testing
