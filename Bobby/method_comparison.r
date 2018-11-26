@@ -13,6 +13,23 @@ prob_generator <- function(pi1,pi2,outcome,theta){
   }
 }
 
+obtain_kendall <- function(true, pred){
+  # Input two vectors of coef
+  rank_true <- names(sort(true, decreasing = TRUE))
+  rank_pred <- names(sort(pred, decreasing = TRUE))
+  
+  # Create Dummy
+  dummy <- c(1:length(true))
+  names(dummy) <- names(true)
+  
+  # Encode
+  dummy_true <- dummy[rank_true]
+  dummy_pred <- dummy[rank_pred]
+  
+  # Kendall tau score
+  return(Kendall(dummy_true, dummy_pred)$tau[[1]])
+}
+
 teleporter <- function(df,delta,year,gender,torpids){
   # df is the results that we create into a wins matrix
   # 1-delta is the teleportation probability
@@ -52,7 +69,8 @@ teleporter <- function(df,delta,year,gender,torpids){
   df_teleport_mat <- t(t(df_mat_norm)*col_sums) 
   df_teleport_mat <- as.matrix(df_teleport_mat)
   
-  return(df_teleport_mat)
+  #return(df_teleport_mat)
+  return(scrooge(df_mat_norm))
 }
 
 ######################################################################################
@@ -90,10 +108,10 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
       pad_fit <- btfit(pad_btdata, a=1.1)
       
       # apply teleportation to the unpadded results
-      tele_wins<- teleporter(no_pad_df,delta,year=from_year-5,gender, torpids=torpids)
-      tele_btdata <- btdata(tele_wins)
-      tele_fit <- btfit(tele_btdata,a=1.1)
-      
+      #tele_wins<- teleporter(no_pad_df,delta,year=from_year-5,gender, torpids=torpids)
+      #tele_btdata <- btdata(tele_wins)
+      #tele_fit <- btfit(tele_btdata,a=1.1)
+      tele_fit <- teleporter(no_pad_df,delta,year=from_year-5,gender,torpids=torpids)
       # get pi coefficients
       pad_pi <- exp(coef(pad_fit))
       no_pad_pi <- exp(coef(no_pad_fit))
@@ -135,29 +153,22 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
       if (rankPlot==TRUE){
         # organise the data from each year before adding to df
         #print(paste0('Currently downloading data from the year: ', year))
-        
         year_df <- yeardf(from_year, sex=gender,torp=FALSE)
         year_df$ranking <- seq_len(nrow(year_df))
         year_df$finalRanking <- sapply(seq_len(nrow(year_df)),function(x) -sum(year_df[x,1:4])+x)
-        final_rank_pad_vec <- year_df[names(sort(pad_pi,decreasing = TRUE)),'finalRanking']
-        addition_pad <- sum(!is.na(final_rank_pad_vec))
-        final_rank_pad_vec[is.na(final_rank_pad_vec)]=seq_len(length(pad_pi))[is.na(final_rank_pad_vec)]
-        final_rank_tele_vec <- year_df[names(sort(tele_pi,decreasing=TRUE)),'finalRanking']
-        addition_tele <- sum(!is.na(final_rank_tele_vec))
-        final_rank_tele_vec[is.na(final_rank_tele_vec)]=seq_len(length(tele_pi))[is.na(final_rank_tele_vec)]
-        final_rank_no_pad_vec <- year_df[names(sort(no_pad_pi,decreasing=TRUE)),'finalRanking']
-        addition_no_pad <- sum(!is.na(final_rank_no_pad_vec))
-        final_rank_no_pad_vec[is.na(final_rank_no_pad_vec)]=seq_len(length(no_pad_pi))[is.na(final_rank_no_pad_vec)]
-        pad_rank_mat[toString(delta),toString(from_year)]<-sum(abs(seq_len(length(pad_pi))-final_rank_pad_vec))
-        tele_rank_mat[toString(delta),toString(from_year)]<-sum(abs(seq_len(length(tele_pi))-final_rank_tele_vec))
-        no_pad_rank_vec[toString(from_year)]<- sum(abs(seq_len(length(no_pad_pi))-final_rank_no_pad_vec))
         
-        relevant_names <- names(tele_pi)[names(tele_pi)%in% rownames(year_df)]
-        nuffin[toString(from_year)] <- sum(abs(year_df[relevant_names,'ranking']-year_df[relevant_names,'finalRanking']))
+        common_names <- intersect(rownames(year_df),names(pad_pi))
+        common_final_rank <- 1/year_df[common_names,'finalRanking']
+        names(common_final_rank) <- common_names 
         
-        if (delta==delta_vec[1] ){
-          comparison_counts <-comparison_counts+addition_tele
-        }        
+        common_initial_rank <- 1/year_df[common_names,'ranking']
+        names(common_initial_rank) <- common_names
+        
+        pad_rank_mat[toString(delta),toString(from_year)] <- obtain_kendall(common_final_rank,pad_pi[common_names])
+        tele_rank_mat[toString(delta),toString(from_year)] <- obtain_kendall(common_final_rank,coeffs[common_names])
+        no_pad_rank_vec[toString(from_year)]<- obtain_kendall(common_final_rank,no_pad_pi[common_names])
+        nuffin[toString(from_year)] <- obtain_kendall(common_final_rank,common_initial_rank)
+        
         
       }
       ##################################################################
@@ -175,16 +186,18 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
 
   }
   if (rankPlot==TRUE){
-    pad_rank_vec<-rowSums(pad_rank_mat)/comparison_counts
-    tele_rank_vec <- rowSums(tele_rank_mat)/comparison_counts
-    baseline <- sum(no_pad_rank_vec)/comparison_counts
-    nuffin_baseline <-sum(nuffin)/comparison_counts
+    pad_rank_vec<-rowSums(pad_rank_mat)/years
+    tele_rank_vec <- rowSums(tele_rank_mat)/years
+    baseline <- sum(no_pad_rank_vec)/years
+    nuffin_baseline <-sum(nuffin)/years
     name <- paste0(gender,'deltacomparison.pdf')
     pdf(name,width=8,height=5,paper='special') 
-    plot(delta_vec, pad_rank_vec,'b', col='red',ylim=c(min(c(pad_rank_vec,tele_rank_vec,nuffin_baseline)),max(c(pad_rank_vec,tele_rank_vec,nuffin_baseline))),xlab='Delta',ylab='Average rank error')
+    plot(delta_vec, pad_rank_vec,'b', col='red',ylim=c(min(c(pad_rank_vec,tele_rank_vec,nuffin_baseline,baseline)),max(c(pad_rank_vec,tele_rank_vec,nuffin_baseline))),
+         xlab='Delta',ylab='Kendall rank correlation coefficient')
     lines(delta_vec,tele_rank_vec,'b',col='blue')
     abline(h=nuffin_baseline, col='darkgreen')
-    legend('topleft',c('Padding','Teleport', 'No Change'),col=c('red','blue','darkgreen'),lty=1)
+    abline(h=baseline, col='darkviolet')
+    legend('right',c('Padding','Teleport', 'No Change','MAP'),col=c('red','blue','darkgreen','darkviolet'),lty=1)
     dev.off()
   }
 
