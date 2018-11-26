@@ -98,7 +98,7 @@ dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff
             newBoatVec[position] <- winBoat
             # add ii rows to the df in order to give overbumps more weighting
             if (position < cutoff){
-              df[seq(nrow(df)+1,nrow(df)+ii),] <- matrix(rep(c(loseBoat, winBoat, 'W2'),each=ii, nrow=ii))
+              df[nrow(df)+1,] <- c(loseBoat, winBoat, 'W2')
             }  
             
             
@@ -133,7 +133,7 @@ dataGather <- function(years = 1,from = 2019,torpids = FALSE,draw = TRUE, cutoff
             bumper <- rownames(bumpBoatsdf)[bumperIndex + index]
             position <- which(rownames(yeardf)==boat)
             if (position < cutoff){
-              df[seq(nrow(df)+1,nrow(df)-change),] <- matrix(rep(c(bumper,boat,'W1'), each=-change), nrow= -change)
+              df[nrow(df)+1,] <- c(bumper,boat,'W1')
             }
             
           }

@@ -6,7 +6,7 @@ library(BradleyTerryScalable)
 library(igraph)
 
 
-pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot=FALSE, delta = 0.85, gender){
+pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot=FALSE, delta = 0.85, gender='m'){
   
   # get results dataframe first from given time period (from-years to from -1)
   row_df <- dataGather(years,from=from,cutoff=cutoff,draw=draw,torpids=torpids, gender=gender)
@@ -22,9 +22,16 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   
   # option to plot the graph 
   if (plot){
+    pdf('rownetwork.pdf',width=8,height=5,paper='special') 
     par(mar=c(0,0,0,0) + 0.1)
     
-    plot.igraph(row_btdata$graph, vertex.size=3, edge.arrow.size = 0.5)
+    plot.igraph(row_btdata$graph,    vertex.color = rgb(0.8,0.4,0.3,0.8),          # Node color
+                vertex.frame.color = "white",                 # Node border color
+                vertex.shape="circle",                        # One of “none”, “circle”, “square”, “csquare”, “rectangle” “crectangle”, “vrectangle”, “pie”, “raster”, or “sphere”
+                vertex.size=1,                               # Size of the node (default is 15)
+                vertex.size2=NA,
+                vertex.size=1,vertex.label.cex=0.5, edge.arrow.size = 0.5,edge.arrow.width=0.5)
+    dev.off()
   }
   
   row_pad <- as.matrix(row_btdata$wins)
