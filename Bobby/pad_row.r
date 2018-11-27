@@ -35,8 +35,8 @@ pad_row <- function(years=5,from=2019, torpids=FALSE, draw=TRUE, cutoff=50, plot
   }
   
   row_pad <- as.matrix(row_btdata$wins)
-  
-  avg_wins <- sum(row_pad)/nrow(row_pad)
+  # calculated using previous year's data from 2005 to 2009
+  avg_wins <- 2*years
   
   # use rankings from prior_year
   prior_year <- from - years
@@ -77,7 +77,7 @@ scrooge <- function(m){
   
   ## First convert m into a transition matrix, with column sums 1
   column_totals <- colSums(m)
-  m_transition <- m / matrix(column_totals, 54, 54, byrow = TRUE)
+  m_transition <- m / matrix(column_totals, nrow(m), nrow(m), byrow = TRUE)
   
   ## Now we get the eigenvector that corresponds to eigenvalue 1 
   ## (the first eigenvalue, so we want the first column from the matrix of eigenvectors):

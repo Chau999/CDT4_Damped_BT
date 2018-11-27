@@ -115,11 +115,11 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
       # get pi coefficients
       pad_pi <- exp(coef(pad_fit))
       no_pad_pi <- exp(coef(no_pad_fit))
-      coeffs<- coef(tele_fit)
+      coeffs<- Re(tele_fit)
       # for some reason coeffs is sometimes a list
-      if (is.list(coef(tele_fit))){
-        coeffs <- coef(tele_fit)[[1]]
-      }
+      #if (is.list(coef(tele_fit))){
+        #coeffs <- coef(tele_fit)[[1]]
+      #}
       tele_pi <- exp(coeffs)
       
       # observed draw prob, help us choose theta
@@ -175,13 +175,12 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
     }
     if (logPlot==TRUE){
       name <- paste0(gender,delta*100,'comparison.pdf')
-      pdf(name,width=8,height=5,paper='special') 
-      plot(seq(start+1,start+years), log_mat[,1],'b', col='red',ylim=c(min(log_mat),max(log_mat)),xlab='year',ylab='Log-likelihood',xaxt='n')
-      axis(1, at=seq(2008,2018,by=1), las=2)
-      lines(seq(start+1,start+years),log_mat[,2],'b',col='blue')
-      lines(seq(start+1,start+years),log_mat[,3],'b',col='green')
-      legend('bottomright',c('Padding','MAP','Teleport'),col=c('red','blue','green'),lty=1)
-      dev.off()
+      plot_data<- data.frame(log_mat)
+      names(plot_data)[1:3] <- c('Padding','MAP','Teleport')
+      plot_data$Year <- seq(start+1,start+years)
+      plt<- ggplot(data=plot_data)+geom_line(aes(x=Year,y=Padding,colour='Padding'))+geom_line(aes(x=Year,y=Teleport,colour='Teleport'))+geom_line(aes(x=Year,y=MAP,colour='MAP'))
+      plt + theme(legend.title=element_blank())+ylab('Log-likelihood')
+      ggsave(name,width=8,height=5)
     }
 
   }
@@ -190,20 +189,26 @@ method_comparison <- function(years=5, torpids=FALSE, draw=TRUE, cutoff=50, logP
     tele_rank_vec <- rowSums(tele_rank_mat)/years
     baseline <- sum(no_pad_rank_vec)/years
     nuffin_baseline <-sum(nuffin)/years
+    plot_data<-data.frame(pad=pad_rank_vec,tele=tele_rank_vec, delta=delta_vec)
     name <- paste0(gender,'deltacomparison.pdf')
-    pdf(name,width=8,height=5,paper='special') 
-    plot(delta_vec, pad_rank_vec,'b', col='red',ylim=c(min(c(pad_rank_vec,tele_rank_vec,nuffin_baseline,baseline)),max(c(pad_rank_vec,tele_rank_vec,nuffin_baseline))),
-         xlab='Delta',ylab='Kendall rank correlation coefficient')
-    lines(delta_vec,tele_rank_vec,'b',col='blue')
-    abline(h=nuffin_baseline, col='darkgreen')
-    abline(h=baseline, col='darkviolet')
-    legend('right',c('Padding','Teleport', 'No Change','MAP'),col=c('red','blue','darkgreen','darkviolet'),lty=1)
-    dev.off()
+    #pdf(name,width=8,height=5,paper='special') 
+    
+    plt<- ggplot(data=plot_data)+geom_line(aes(x=delta,y=pad,colour='Padding'))+geom_line(aes(x=delta,y=tele,colour='Teleport'))+geom_hline(aes(yintercept=baseline,colour='MAP'))+geom_hline(aes(yintercept=nuffin_baseline,colour='No change'))
+    plt + theme(legend.title=element_blank())+ylab('Kendall correlation')+xlab('Delta')
+
+    ggsave(name,width=8,height=5)
+    #plt <- qplot(delta_vec, pad_rank_vec,'b', col='red',ylim=c(min(c(pad_rank_vec,tele_rank_vec,nuffin_baseline,baseline)),max(c(pad_rank_vec,tele_rank_vec,nuffin_baseline))),
+         #xlab='Delta',ylab='Kendall rank correlation coefficient')
+    #lines(delta_vec,tele_rank_vec,'b',col='blue')
+    #abline(h=nuffin_baseline, col='darkgreen')
+    #abline(h=baseline, col='darkviolet')
+    #legend('right',c('Padding','Teleport', 'No Change','MAP'),col=c('red','blue','darkgreen','darkviolet'),lty=1)
+    #dev.off()
   }
 
   
-  
-  return(comparison_counts)
-}
 
+  return(comparison_counts)
+
+}
 
