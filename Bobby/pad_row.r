@@ -1,7 +1,7 @@
 # download the package
-install.packages('BradleyTerryScalable')
-install.packages('Matrix.utils')
-install.packages('stringr')
+#install.packages('BradleyTerryScalable')
+#install.packages('Matrix.utils')
+#install.packages('stringr')
 library(BradleyTerryScalable)
 library(igraph)
 
